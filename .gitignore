@@ -1,0 +1,6 @@
+testfiles*
+*__pycache__*
+utils/__pycache__*
+.spyproject*
+*.ipynb*
+*.csv
