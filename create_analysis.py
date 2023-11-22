@@ -6,7 +6,6 @@ Created on Tue Feb  7 08:35:21 2023
 """
 
 import utils.queries as queries
-import utils.graphs as graphs
 import utils.htmlgen as htmlgen
 import sqlite3
 
