@@ -43,7 +43,9 @@ def matches_month(c, season, combos, js=False):
                                  y=months, 
                                  z=dfs[com[4]].values.tolist(),
                                  colorscale="Viridis",
-                                 visible=show))
+                                 visible=show,
+                                 hovertemplate='# Matches: %{z}<br>'+
+                                     'Month: %{y} %{x}<extra></extra>'))
     traces = [com[4] for com in combos]
     
     buttons = []
@@ -55,12 +57,12 @@ def matches_month(c, season, combos, js=False):
                             ))
     fig.update_layout(
         yaxis = dict(autorange="reversed"),
-        title = 'Matches per Month',
-        title_x=0.5,
+        #title = 'Matches per Month',
+        #title_x=0.5,
         xaxis_title = 'Year',
         yaxis_title = 'Month',
         height=600,
-        margin=dict(l=20, r=20, t=120, b=20),
+        margin=dict(l=20, r=20, t=60, b=20),
         font=dict(size=18),
         updatemenus=[
             go.layout.Updatemenu(
@@ -102,13 +104,19 @@ def final_scores(c, season, combos, js=False):
                                           axis=0)
         dfs[com[4]] = dfs[com[4]].reindex(scores, fill_value=0,
                                           axis=1)
+        percent = dfs[com[4]]/dfs[com[4]].sum().sum()
+        #print(percent)
         #print(dfs[com[4]])
         show = True if com == combos[0] else False
         fig.add_trace(go.Heatmap(x=scores, 
                                  y=scores, 
                                  z=dfs[com[4]].values.tolist(),
+                                 customdata=percent,
                                  colorscale="Viridis",
-                                 visible=show))
+                                 visible=show,
+                                 hovertemplate='Final score: %{x}-%{y}<br>'+
+                                     'Matches: %{z} (%{customdata:.2%})'+
+                                     '<extra></extra>'))
     traces = [com[4] for com in combos]
     
     buttons = []
@@ -119,12 +127,12 @@ def final_scores(c, season, combos, js=False):
                             args=[{'visible':vis[i]}]
                             ))
     fig.update_layout(
-        title = 'Final Scores',
-        title_x=0.5,
+        #title = 'Final Scores',
+        #title_x=0.5,
         xaxis_title = 'Team 1',
         yaxis_title = 'Team 2',
         height=600,
-        width=600,
+        width=630,
         margin=dict(l=20, r=20, t=120, b=20),
         font=dict(size=18),
         updatemenus=[
@@ -148,7 +156,6 @@ def end_scores(c, season, combos, js=False):
     fig = make_subplots(rows=1, cols=2,
                         shared_yaxes=True,
                         subplot_titles=['Team 1 Hammer', 'Team 2 Hammer'])
-    dfs = {}
     scores = list(range(-5,6))
     vis = []
     traces = []
@@ -166,27 +173,44 @@ def end_scores(c, season, combos, js=False):
             #print(result)
             matches = pd.concat([matches,
                         pd.DataFrame(result,
-                                     columns=['End1', 'Ham1', 'End2', 'Ham2', 
+                                     columns=['Final1','Final2',
+                                              'End1', 'Ham1', 'End2', 'Ham2', 
                                               'End3', 'Ham3', 'End4', 'Ham4',
                                               'End5', 'Ham5', 'End6', 'Ham6', 
                                               'End7', 'Ham7', 'End8', 'Ham8',
                                               'End9', 'Ham9', 'End10', 'Ham10', 
                                               'End11', 'Ham11', 'End12', 'Ham12'])])
+        hammer = pd.DataFrame(columns=['Team1','Team2', 'Win1', 'Win2'])
         ham1 = pd.DataFrame()
         ham2 = pd.DataFrame()
+        endcols = []
+        finals = ['Final1','Final2']
         for e in range(1,com[1]+2):
+            endcols.append('End'+str(e))
             ham1 = pd.concat([ham1, 
                     matches[matches['Ham'+str(e)]==1]['End'+str(e)].value_counts()], 
                     axis=1)
             ham2 = pd.concat([ham2, 
                     matches[matches['Ham'+str(e)]==-1]['End'+str(e)].value_counts()], 
                     axis=1)
-        ham1 = ham1/len(matches)
+            hammer.loc[e] = [matches['Ham'+str(e)].value_counts()[1],
+                             matches['Ham'+str(e)].value_counts()[-1],
+                             matches[(matches[finals].sum(axis=1) == 
+                                      matches[endcols].sum(axis=1)) &
+                                     (matches['Final1'] > matches['Final2'])
+                                     ]['Ham'+str(e)].isna().sum(),
+                             matches[(matches[finals].sum(axis=1) == 
+                                      matches[endcols].sum(axis=1)) &
+                                     (matches['Final1'] < matches['Final2'])
+                                     ]['Ham'+str(e)].isna().sum(),
+                             ]
+        #print(hammer)
+        ham1 = ham1/len(matches)*100
         ham1.index = ham1.index.astype(int) 
         ham1 = ham1.reindex(scores).fillna(0)
         #print(ham1)
             
-        ham2 = ham2/len(matches)
+        ham2 = ham2/len(matches)*100
         ham2.index = -ham2.index.astype(int) 
         ham2 = ham2.reindex(scores).fillna(0)
         #print(ham2)
@@ -200,7 +224,12 @@ def end_scores(c, season, combos, js=False):
                                      name=str(i+1),
                                      marker=dict(color=colors[i], size=8),
                                      line=dict(color=colors[i]),
-                                     visible=show),
+                                     visible=show,
+                                     meta=[str(i+1)],
+                                     hovertemplate='End %{meta[0]}'+
+                                         ' score %{x}, team 1 hammer<br>'+
+                                         'Frequency: %{y.2f}%'+
+                                         '<extra></extra>'),
                           row=1, col=1)
             fig.add_trace(go.Scatter(x=ham2.index,
                                      y=ham2['End'+str(i+1)],
@@ -208,7 +237,12 @@ def end_scores(c, season, combos, js=False):
                                      marker=dict(color=colors[i], size=8),
                                      line=dict(color=colors[i]),
                                      visible=show,
-                                     showlegend=False),
+                                     showlegend=False,
+                                     meta=[str(i+1)],
+                                     hovertemplate='End %{meta[0]}'+
+                                         ' score %{x}, team 2 hammer<br>'+
+                                         'Frequency: %{y.2f}%'+
+                                         '<extra></extra>'),
                           row=1, col=2)
         if len(vis) == 0:
             vis.append([True]*((com[1]+1)*2))
@@ -228,11 +262,12 @@ def end_scores(c, season, combos, js=False):
                             args=[{'visible':vis[i]}]
                             ))
     fig.update_layout(
-        title = 'End Scores',
-        title_x=0.5,
+        #title = 'End Scores',
+        #title_x=0.5,
         xaxis_title = 'Team 1',
         xaxis2_title= 'Team 2',
-        yaxis_title = 'Frequency',
+        yaxis_title = 'Percentage of Matches',
+        legend_title_text='End',
         height=600,
         margin=dict(l=20, r=20, t=120, b=20),
         font=dict(size=18),
@@ -244,7 +279,7 @@ def end_scores(c, season, combos, js=False):
                 showactive=True,
                 x=0.0,
                 xanchor="left",
-                y=1.15,
+                y=1.2,
                 yanchor="top"
             ),
         ])

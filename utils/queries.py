@@ -508,7 +508,8 @@ FROM matches
 def get_end_scores(ends = 8, category = None,
                      rank1 = None, rank2 = None, season = [None], ordered=True):
     all_queries = []
-    query = '''SELECT CAST(End1 AS INTEGER), CAST(Ham1 AS INTEGER), 
+    query = '''SELECT Final1, Final2, 
+                      CAST(End1 AS INTEGER), CAST(Ham1 AS INTEGER), 
                       CAST(End2 AS INTEGER), CAST(Ham2 AS INTEGER),
                       CAST(End3 AS INTEGER), CAST(Ham3 AS INTEGER),
                       CAST(End4 AS INTEGER), CAST(Ham4 AS INTEGER),
@@ -526,7 +527,8 @@ FROM matches\n'''
                           ordered = ordered)
     query += ';'
     all_queries.append(query)
-    query = '''SELECT -CAST(End1 AS INTEGER), -CAST(Ham1 AS INTEGER), 
+    query = '''SELECT Final2, Final1,
+                      -CAST(End1 AS INTEGER), -CAST(Ham1 AS INTEGER), 
                       -CAST(End2 AS INTEGER), -CAST(Ham2 AS INTEGER),
                       -CAST(End3 AS INTEGER), -CAST(Ham3 AS INTEGER),
                       -CAST(End4 AS INTEGER), -CAST(Ham4 AS INTEGER),
