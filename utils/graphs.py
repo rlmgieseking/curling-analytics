@@ -61,7 +61,8 @@ def matches_month(c, season, combos, js=False):
         #title_x=0.5,
         xaxis_title = 'Year',
         yaxis_title = 'Month',
-        height=600,
+        height=700,
+        width=1200,
         margin=dict(l=20, r=20, t=60, b=20),
         font=dict(size=18),
         updatemenus=[
@@ -129,10 +130,10 @@ def final_scores(c, season, combos, js=False):
     fig.update_layout(
         #title = 'Final Scores',
         #title_x=0.5,
-        xaxis_title = 'Team 1',
-        yaxis_title = 'Team 2',
-        height=600,
-        width=630,
+        xaxis_title = 'Team 1 Final Score',
+        yaxis_title = 'Team 2 Final Score',
+        height=700,
+        width=720,
         margin=dict(l=20, r=20, t=120, b=20),
         font=dict(size=18),
         updatemenus=[
@@ -153,9 +154,11 @@ def final_scores(c, season, combos, js=False):
 def end_scores(c, season, combos, js=False):
     from plotly.subplots import make_subplots
     plotly.io.templates.default = "simple_white"
-    fig = make_subplots(rows=1, cols=2,
-                        shared_yaxes=True,
-                        subplot_titles=['Team 1 Hammer', 'Team 2 Hammer'])
+    fig = make_subplots(rows=1, cols=3,
+                        shared_yaxes=False,
+                        subplot_titles=['Scores, Team 1 Hammer', 
+                                        'Scores, Team 2 Hammer',
+                                        'Hammer By End'])
     scores = list(range(-5,6))
     vis = []
     traces = []
@@ -180,11 +183,11 @@ def end_scores(c, season, combos, js=False):
                                               'End7', 'Ham7', 'End8', 'Ham8',
                                               'End9', 'Ham9', 'End10', 'Ham10', 
                                               'End11', 'Ham11', 'End12', 'Ham12'])])
-        hammer = pd.DataFrame(columns=['Team1','Team2', 'Win1', 'Win2'])
+        hammer = pd.DataFrame(columns=['Team 1 Hammer','Team 2 Hammer', 
+                                       'Team 1 Win', 'Team 2 Win'])
         ham1 = pd.DataFrame()
         ham2 = pd.DataFrame()
         endcols = []
-        finals = ['Final1','Final2']
         for e in range(1,com[1]+2):
             endcols.append('End'+str(e))
             ham1 = pd.concat([ham1, 
@@ -195,16 +198,27 @@ def end_scores(c, season, combos, js=False):
                     axis=1)
             hammer.loc[e] = [matches['Ham'+str(e)].value_counts()[1],
                              matches['Ham'+str(e)].value_counts()[-1],
-                             matches[(matches[finals].sum(axis=1) == 
-                                      matches[endcols].sum(axis=1)) &
+                             matches[(matches['Final1'] + matches['Final2'] == 
+                                      matches[endcols].abs().sum(axis=1)) &
                                      (matches['Final1'] > matches['Final2'])
                                      ]['Ham'+str(e)].isna().sum(),
-                             matches[(matches[finals].sum(axis=1) == 
-                                      matches[endcols].sum(axis=1)) &
+                             matches[(matches['Final1'] + matches['Final2'] == 
+                                      matches[endcols].abs().sum(axis=1)) &
                                      (matches['Final1'] < matches['Final2'])
                                      ]['Ham'+str(e)].isna().sum(),
                              ]
-        #print(hammer)
+        #print(matches[matches['Final1'] > matches['Final2']
+        #        ].count())
+        hammer.loc[com[1]+2] = [0, 0, 
+                                matches[matches['Final1'] > matches['Final2']
+                                        ].shape[0],
+                                matches[matches['Final1'] < matches['Final2']
+                                        ].shape[0]]
+
+        hammer["Unknown Hammer"] = len(matches) - hammer.sum(axis=1)
+        hammer = hammer/len(matches)*100
+        #print(hammer) 
+        
         ham1 = ham1/len(matches)*100
         ham1.index = ham1.index.astype(int) 
         ham1 = ham1.reindex(scores).fillna(0)
@@ -217,23 +231,24 @@ def end_scores(c, season, combos, js=False):
         
         colors = plotly.colors.sample_colorscale('Viridis', com[1]+1)
         show = True if len(vis)==0 else False
+        
             
         for i in range(com[1]+1):
             fig.add_trace(go.Scatter(x=ham1.index,
                                      y=ham1['End'+str(i+1)],
-                                     name=str(i+1),
+                                     name='End '+str(i+1),
                                      marker=dict(color=colors[i], size=8),
                                      line=dict(color=colors[i]),
                                      visible=show,
                                      meta=[str(i+1)],
                                      hovertemplate='End %{meta[0]}'+
                                          ' score %{x}, team 1 hammer<br>'+
-                                         'Frequency: %{y.2f}%'+
+                                         'Frequency: %{y:.2f}%'+
                                          '<extra></extra>'),
                           row=1, col=1)
             fig.add_trace(go.Scatter(x=ham2.index,
                                      y=ham2['End'+str(i+1)],
-                                     name=str(i+1),
+                                     name='End '+str(i+1),
                                      marker=dict(color=colors[i], size=8),
                                      line=dict(color=colors[i]),
                                      visible=show,
@@ -241,16 +256,35 @@ def end_scores(c, season, combos, js=False):
                                      meta=[str(i+1)],
                                      hovertemplate='End %{meta[0]}'+
                                          ' score %{x}, team 2 hammer<br>'+
-                                         'Frequency: %{y.2f}%'+
+                                         'Frequency: %{y:.2f}%'+
                                          '<extra></extra>'),
                           row=1, col=2)
+        ham_colors = ['red','blue','maroon','navy','silver']
+        for i, col in enumerate(hammer.columns):
+            shape = 'square' if i%2 == 0 else 'diamond'
+            size = 10 if i%2 == 0 else 8
+            dash = 'solid' if i%2 == 0 else 'dash'
+            fig.add_trace(go.Scatter(x=hammer.index,
+                                     y=hammer[col],
+                                     name=col,
+                                     marker=dict(color=ham_colors[i], 
+                                                 size=size,
+                                                 symbol=shape),
+                                     line=dict(color=ham_colors[i],
+                                               dash=dash),
+                                     visible=show,
+                                     meta=[col],
+                                     hovertemplate='%{meta[0]}, End %{x}<br>'+
+                                         'Frequency: %{y:.2f}%'+
+                                         '<extra></extra>'),
+                          row=1, col=3)
         if len(vis) == 0:
-            vis.append([True]*((com[1]+1)*2))
+            vis.append([True]*((com[1]+1)*2+5))
         else: 
             curr_len = len(vis[-1])
             for v in vis:
-                v.extend([False]*((com[1]+1)*2))
-            vis.append([False]*curr_len+[True]*((com[1]+1)*2))
+                v.extend([False]*((com[1]+1)*2+5))
+            vis.append([False]*curr_len+[True]*((com[1]+1)*2+5))
     #print(len(fig.data))
     #print('vis',len(vis[0]), len(vis[-1]))    
     #traces = [com[4] for com in combos]
@@ -264,11 +298,16 @@ def end_scores(c, season, combos, js=False):
     fig.update_layout(
         #title = 'End Scores',
         #title_x=0.5,
-        xaxis_title = 'Team 1',
-        xaxis2_title= 'Team 2',
+        xaxis_title = 'Team 1 End Score',
+        xaxis2_title= 'Team 2 End Score',
+        xaxis3_title= 'End',
         yaxis_title = 'Percentage of Matches',
-        legend_title_text='End',
-        height=600,
+        legend={'font':{'size':18},
+                #'title':{'text':'End'}
+                },
+        #legend_title_text='End',
+        height=700,
+        width=1200,
         margin=dict(l=20, r=20, t=120, b=20),
         font=dict(size=18),
         updatemenus=[
@@ -285,6 +324,156 @@ def end_scores(c, season, combos, js=False):
         ])
     
     return plotly.io.to_html(fig, include_plotlyjs=js, full_html=False)
+
+def win_probability(c, season, combos, js=False):
+    from plotly.subplots import make_subplots
+    plotly.io.templates.default = "simple_white"
+    fig = make_subplots(rows=1, cols=2,
+                        shared_yaxes=True,
+                        subplot_titles=['Team 1 Hammer', 'Team 2 Hammer'])
+    vis = []
+    traces = []
+    for com in combos:
+        if com[1] == None:
+            continue
+        traces.append(com[4])
+        print('Generating win probabilities for '+com[4])
+        squery = queries.get_end_scores(category=com[0], ends=com[1], 
+                                       rank1 = com[2], rank2 = com[3], 
+                                       season=season)
+        matches = pd.DataFrame()
+        for s in squery:
+            result = c.execute(s).fetchall()
+            #print(result)
+            matches = pd.concat([matches,
+                        pd.DataFrame(result,
+                                     columns=['Final1','Final2',
+                                              'End1', 'Ham1', 'End2', 'Ham2', 
+                                              'End3', 'Ham3', 'End4', 'Ham4',
+                                              'End5', 'Ham5', 'End6', 'Ham6', 
+                                              'End7', 'Ham7', 'End8', 'Ham8',
+                                              'End9', 'Ham9', 'End10', 'Ham10', 
+                                              'End11', 'Ham11', 'End12', 'Ham12'])])
+        matches['Win1'] = np.where(matches['Final1'] > matches['Final2'], 
+                                   True, False)
+        matches['Margin0'] = 0
+        matches['Margin1'] = matches['End1']
+        for e in range(2,com[1]+2):
+            matches['Margin'+str(e)] = (matches['Margin'+str(e-1)] + 
+                                        matches['End'+str(e)])
+        margin = list(range(-5,6))
+        margin_cols = ['Margin'+str(m) for m in margin]
+        win_cols = ['Win'+str(m) for m in margin]
+        prob_cols = ['Prob'+str(m) for m in margin]
+        text_cols = ['Text'+str(m) for m in margin]
+        all_cols = margin_cols + win_cols + prob_cols
+        #pd.set_option('display.max_columns', None)
+        #print(matches.head())
+        ham1 = pd.DataFrame(columns=all_cols)
+        ham2 = pd.DataFrame(columns=all_cols)
+        for e in range(1,com[1]+2):
+            for m in margin:
+                ham1.at[e,'Margin'+str(m)] = (
+                    matches[(matches['Margin'+str(e-1)] == m) &
+                            (matches['Ham'+str(e)] == 1)].shape[0])
+                ham1.at[e,'Win'+str(m)] = (
+                    matches[(matches['Margin'+str(e-1)] == m) &
+                            (matches['Ham'+str(e)] == 1) &
+                            (matches['Win1'] == True)].shape[0])
+                ham1.at[e,'Prob'+str(m)] = (ham1.at[e,'Win'+str(m)] / 
+                                            ham1.at[e,'Margin'+str(m)]*100 
+                                            if ham1.at[e,'Margin'+str(m)] > 0 
+                                            else None)
+                ham1.at[e,'Text'+str(m)] = (str(ham1.at[e,'Win'+str(m)]) + '/' +
+                                            str(ham1.at[e,'Margin'+str(m)]))
+                ham2.at[e,'Margin'+str(m)] = (
+                    matches[(matches['Margin'+str(e-1)] == m) &
+                            (matches['Ham'+str(e)] == -1)].shape[0])
+                ham2.at[e,'Win'+str(m)] = (
+                    matches[(matches['Margin'+str(e-1)] == m) &
+                            (matches['Ham'+str(e)] == -1) &
+                            (matches['Win1'] == True)].shape[0])
+                ham2.at[e,'Prob'+str(m)] = (ham2.at[e,'Win'+str(m)] / 
+                                            ham2.at[e,'Margin'+str(m)]*100 
+                                            if ham2.at[e,'Margin'+str(m)] > 0 
+                                            else None)
+                ham2.at[e,'Text'+str(m)] = (str(ham2.at[e,'Win'+str(m)]) + '/' +
+                                            str(ham2.at[e,'Margin'+str(m)]))
+        for m in margin:
+            if m == 0: 
+                continue
+            ham1.at[com[1]+1,'Margin'+str(m)] = None
+            ham1.at[com[1]+1,'Win'+str(m)] = None
+            ham1.at[com[1]+1,'Prob'+str(m)] = None
+            ham2.at[com[1]+1,'Margin'+str(m)] = None
+            ham2.at[com[1]+1,'Win'+str(m)] = None
+            ham2.at[com[1]+1,'Prob'+str(m)] = None
+            
+        #print(ham1[prob_cols])
+        #print(ham2[prob_cols])
+        
+        show = True if len(vis)==0 else False
+        fig.add_trace(go.Heatmap(x=margin, 
+                             y=list(range(1,com[1]+2)), 
+                             z=ham1[prob_cols].values.tolist(),
+                             meta=ham1[text_cols].values.tolist(),
+                             colorscale="RdBu", reversescale=True,
+                             visible=show,
+                             hovertemplate='Team 1 Win Probability: %{z:.1f}%<br>'+
+                                 '(%{meta} matches)<br>'+
+                                 'Team 1 Hammer in End %{y}, Margin %{x}'+
+                                 '<extra></extra>'),
+                      row=1, col=1)
+        fig.add_trace(go.Heatmap(x=margin, 
+                             y=list(range(1,com[1]+2)), 
+                             z=ham2[prob_cols].values.tolist(),
+                             meta=ham2[text_cols].values.tolist(),
+                             colorscale="RdBu", reversescale=True,
+                             visible=show,
+                             hovertemplate='Team 1 Win Probability: %{z:.1f}%<br>'+
+                                 '(%{meta} matches)<br>'+
+                                 'Team 2 Hammer in End %{y}, Margin %{x}'+
+                                 '<extra></extra>'),
+                      row=1, col=2)
+        if len(vis) == 0:
+            vis.append([True]*2)
+        else: 
+            curr_len = len(vis[-1])
+            for v in vis:
+                v.extend([False]*2)
+            vis.append([False]*curr_len+[True]*2)
+
+    buttons = []
+    for i, t in enumerate(traces):
+        buttons.append(dict(method='update',
+                            label=t,
+                            args=[{'visible':vis[i]}]
+                            ))
+    fig.update_layout(
+        #yaxis = dict(autorange="reversed"),
+        xaxis_title = 'Team 1 Points Margin',
+        xaxis2_title = 'Team 1 Points Margin',
+        yaxis_title = 'End',
+        height=700,
+        width=1200,
+        margin=dict(l=20, r=20, t=60, b=20),
+        font=dict(size=18),
+        updatemenus=[
+            go.layout.Updatemenu(
+                buttons=buttons,
+                direction="down",
+                pad={"r": 10, "t": 10},
+                showactive=True,
+                x=0.0,
+                xanchor="left",
+                y=1.2,
+                yanchor="top"
+            ),
+        ])
+    
+    return plotly.io.to_html(fig, include_plotlyjs=js, full_html=False)
+
+
 '''
 def plot_matches_month(c, ends = None, category = None, 
                         rank1 = None, rank2 = None, season = None):

@@ -90,7 +90,13 @@ combos = [[None, None, None, None, 'All matches'],
            'Women, 10 ends, rank 26-100 vs. 101-500'],
           ['Women', 10, (101,500), (101,500), 
            'Women, 10 ends, rank 101-500 vs. 101-500']]
-
+'''
+combos = [[None, None, None, None, 'All matches'],
+          ['Men', 8,  (  1,500), (  1,500), 
+           'Men, 8 ends, all ranks'],
+          ['Women', 10, (  1, 25), ( 26,100), 
+           'Women, 10 ends, rank 1-25 vs. 26-100']]
+'''
 out = open(html_file,'w', encoding="utf-8")
 out.write("<html>")
 out.write(htmlgen.head())
@@ -101,6 +107,7 @@ out.write(htmlgen.database())
 out.write(htmlgen.matches_month(c, season, combos, True))
 out.write(htmlgen.final_scores(c, season, combos, False))
 out.write(htmlgen.end_scores(c, season, combos, False))
+out.write(htmlgen.win_probability(c, season, combos, False))
 out.write("</body></html>\n")
 out.close()
 

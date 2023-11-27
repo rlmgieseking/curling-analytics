@@ -60,7 +60,7 @@ if update_matches:
         WHERE Date BETWEEN "''' + start + '" AND "' + today + '";').fetchall()
     print('Number of events that need matches: '+str(len(new_events)))
     for event in new_events:
-        if event[0] >= 7000:
+        if event[0] >= 8020:
             matches = scraper.readallboxscores(event[0])
         else:
             matches = []

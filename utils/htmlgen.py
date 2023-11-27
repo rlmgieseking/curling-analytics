@@ -121,7 +121,41 @@ def end_scores(c, season, combos, js=False):
    html += '</details>'
    return html
 
-def template():
+def win_probability(c, season, combos, js=False):
+    # Header 
+    html = '<details><summary>Testing the Common Wisdom: Having hammer in even ends is a big advantage</summary>'
+    # Main text 
+    html += '<p>In high-level curling, most players and commentators think that having the advantage of hammer (last rock) in even ends is a big advantage late in the game. The team with hammer has more control over the outcome of the end and is much more likely to score. </p>'
+    html += '<p>For example, a team that is down 2 points with hammer in end 8 of 10 could score 2 in end 8 (tieing the score), force their opponent to score 1 point in end 9 (going down by one), and then score 2 in end 10 to win by 1 point. In contrast, a team that is down by even 1 point without hammer in end 8 of 10 has a trickier route to winning the game: they need to either score 3 points when they have hammer or steal at least 1 point to have a chance of winning.</p>'
+    html += '<p>The graph below shows the probability of Team 1 winning a curling match, and can be filtered by mens/womens, match length in ends, and ranks of the two teams. Positive margins mean that Team 1 is ahead, and negative margins means that Team 1 is behind.</p>'
+    html += graphs.win_probability(c, season, combos, js)
+    html += '<p>This graph shows the following trends:</p>'
+    html += '''<ul>
+   <li>If the range of ranks is the same for Team 1 and Team 2, the left and right graphs essentially mirror each other (because both graphs use Team 1's points margin on the x axis), with their color scales reversed (because the color scale shows Team 1's chance of winning in both graphs).</li>
+   <li>Situations that are impossible or have not occurred in any actual games in the database are shown as white boxes. For example, during End 1, no one has had an opportunity to score, so the only possible points margin is 0. The team that scores in End 1 loses hammer in End 2, so a positive margin (Team 1 scored) must mean that Team 2 has hammer and vice versa. An extra end (End 9 in an 8-end match, or End 11 in a 10-end match) only happens if the match is tied at the end of regular play.</li>
+   <li>Some of the graphs, especially the ones sorted by team rank, have very few matches within certain ranges of margins - especially for margins where the lower-ranked team is ahead. The small sample size creates a lot of noise in the win probabilities, so the exact percentages should not be over-interpreted. You can hover the mouse over a box in the graph to see how many matches in the database fit that situation.</li>
+   <li>There are fewer 10-end matches than 8-end matches in the database, and fewer women's matches than men's matches. I will focus mostly on 8-end men's games, since the larger number means that subset is the least noisy.</li>
+   <li>If Team 1 and Team 2 have similar ranks:
+       <ul><li>As expected, the team that is currently ahead on the scoreboard has a >50% chance of winning, and if the game is tied, the team with hammer has a >50% chance of winning.</li>
+       <li>Even relatively small deficits on the scoreboard are hard to overcome in curling: a team up by 1 or more points with hammer has >70% chance of winning in almost all scenarios, and a team down by 2 or more points with hammer has a <30% chance of winning. This is not surprising because scores of >2 points in an end are fairly rare.</li>
+       <li>For a given score margin, the fewer ends remain, the more likely it is that the team currently ahead on the scoreboard will go on to win the game in most cases (the colors generally get darker as you go up in the plot toward higher current end numbers).</li>
+   </ul>
+   <li>If Team 1 outranks Team 2:
+       <ul><li>The higher-ranked team has a higher chance of winning even if they are not currently ahead. For example, for men's 8-end games where Team 1 is ranked 1-25 and Team 2 is ranked 101-500, Team 1 has a >50% chance of winning if they are down 1 point with hammer, or tied without hammer in End 7 or earlier.</li>
+       <li>This suggests that even if a higher-ranked team makes a mistake early in a match to put themselves at a disadvantage, they are more likely to outplay their opponent later in the match and regain the advantage.</li>
+   </ul>
+   <li>Does the common wisdom match the data?
+       <ul><li>If having hammer in even ends is actually a big advantage, I would expect the likelihood of Team 1 winning when they have hammer at a given score margin to be noticeably higher in End 6 of an 8-end match (of End 8 of a 10-end match) than in the surrounding ends.</li>
+       <li>For teams of all ranks, that pattern is <b>not</b> clearly present: the probability of winning based on a given scenario in End 6 is not significantly different than during the nearby ends. This means that <b>the common wisdom is not quite accurate.</b></li>
+       <li>Instead, for a team that is down 1-2 points with hammer, their odds of winning are a few percentage points lower in End 7 than in End 6 or 8 of an 8-end match. Instead of having hammer in even ends being an advantage, <b>having hammer in the next-to-last end is a small disadvantage in close matches.</b> Aiming to have hammer in even ends helps teams avoid this disadvantage, instead of giving them a direct advantage.</li>
+       <li>Looking only at the top-ranked teams, there are hints that <b>the common wisdom may be more accurate for the best teams.</b> However, the data is sparse enough that these hints may just be noise.</li>
+   </ul> 
+ </ul>'''
+    # Closing tag
+    html += '</details>'
+    return html
+
+def template(c, season, combos, js=False):
    # Header 
    html = '<details><summary>Title</summary>'
    # Main text 
