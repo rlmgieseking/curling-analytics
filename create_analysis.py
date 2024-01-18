@@ -6,6 +6,7 @@ Created on Tue Feb  7 08:35:21 2023
 """
 
 import utils.queries as queries
+import utils.graphs as graphs
 import utils.htmlgen as htmlgen
 import sqlite3
 
@@ -107,8 +108,12 @@ out.write(htmlgen.database())
 out.write(htmlgen.matches_month(c, season, combos, True))
 out.write(htmlgen.final_scores(c, season, combos, False))
 out.write(htmlgen.end_scores(c, season, combos, False))
-out.write(htmlgen.win_probability(c, season, combos, False))
+win_probs = graphs.get_win_probabilities(c, season, combos)
+out.write(htmlgen.win_probability(c, season, combos, False, win_probs))
+#blanks = graphs.blank_force(c, season, combos, False, win_probs)
+#out.write(blanks)
 out.write("</body></html>\n")
 out.close()
 
 conn.close()
+

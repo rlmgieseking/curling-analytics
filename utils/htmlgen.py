@@ -11,10 +11,11 @@ def head():
     h4 {font-family: verdana, arial, sans-serif;}
     h5 {font-family: verdana, arial, sans-serif;}
     p  {font-family: verdana, arial, sans-serif;}
-    ul {font-family: verdana, arial, sans-serif;}
+    ul, ol {font-family: verdana, arial, sans-serif;}
     div {font-family: verdana, arial, sans-serif;}
     summary {font-family: verdana, arial, sans-serif; font-size: 1.5em; font-weight: bolder}
     iframe {text-align: center;}
+    table, th, td {font-family: verdana, arial, sans-serif; border: 1px solid black; border-collapse: collapse;}
 </style>
 <title>Curling Sports Analytics</title>
 </head>'''
@@ -55,7 +56,121 @@ def database():
     html = '<details><summary>Database Details</summary>'
     # Main text 
     html += '<p><a href="https://curlingzone.com">CurlingZone</a> maintains a database of the line scores from matches in most major events. Since the website does not allow API access, I used webscraping to construct my own SQL database of the line scores (scores in each end) of over 170,000 matches, along with basic event and team information. The analysis below is based on that database.</p>'
+    html += '<p>The database contains four tables:</p>'
+    html += '''<ol>
+   <li>Matches: This is the main table that stores information about each match, including when it happened, who played, and the line scores.</li>
+   <li>Events: This table includes names and dates of each curling event. Events vary in size, but most include ~10-100 matches.</li>
+   <li>Teams: This table includes the world ranking points for mens and womens teams for each season from 2011-2024, as well as whether the team is a mens or womens team. (Curling also has formats like mixed doubles, wheelchair, junior men/women, etc., which are not currently included in this table.)</li>
+   <li>Updates: This table lists when the update_database script has been run, which lets that script only update matches in events that happened since the last update.</li>
+ </ol>'''
+    html += '<p>The detailed structure of each table is listed below:</p>' 
+    html += ''' <table>
+    <tr>
+        <th>Column</th>
+        <th>Description</th>
+    </tr>
+    <tr><th colspan="2">Matches</th></tr>
+    <tr>
+        <td>EID</td>
+        <td>ID number of event that the match was part of (foreign key for events)</td>
+    </tr>
+    <tr>
+        <td>Draw</td>
+        <td>Time slot (draw) of the match within the event</td>
+    </tr>
+    <tr>
+        <td>Team1</td>
+        <td>Name of first team playing in the match (foreign key for teams)</td>
+    </tr>
+    <tr>
+        <td>Team2</td>
+        <td>Name of second team playing in the match (foreign key for teams)</td>
+    </tr>
+    <tr>
+        <td>Final1</td>
+        <td>Final score of team 1</td>
+    </tr>
+    <tr>
+        <td>Final2</td>
+        <td>Final score of team 2</td>
+    </tr>
+    <tr>
+        <td>Ham1</td>
+        <td>Indicates which team had hammer in End 1 to start the game. 1 for Team 1, -1 for Team 2, Null for unknown.</td>
+    </tr>
+    <tr>
+        <td>End1</td>
+        <td>Score in End 1. Positive means Team 1 scored, negative means Team 2 scored, zero means neither team scored, X or Null means the game was over or the score is unknown.</td>
+    </tr>
+    <tr>
+        <td>End2, End3, ...</td>
+        <td>Columns for Ends 1-12 are included, analogous to End1.</td>
+    </tr>
+    <tr><th colspan="2">Events</th></tr>
+    <tr>
+        <td>EID</td>
+        <td>ID number of the event</td>
+    </tr>
+    <tr>
+        <td>Name</td>
+        <td>Name of the event, in words</td>
+    </tr>
+    <tr>
+        <td>Date</td>
+        <td>Start date of the event. Events usually last 1-12 days.</td>
+    </tr>
+    <tr>
+        <td>Type</td>
+        <td>Identifies the events as mens, womens, etc.</td>
+    </tr>
+    <tr><th colspan="2">Teams</th></tr>
+    <tr>
+        <td>Name</td>
+        <td>Name of the team, usually the name of the team's skip (captain).</td>
+    </tr>
+    <tr>
+        <td>Type</td>
+        <td>Identifies the team as mens, womens, etc.</td>
+    </tr>
+    <tr>
+        <td>Location</td>
+        <td>Country, state, or province where the team was most recently based.</td>
+    </tr>
+    <tr>
+        <td>World2011</td>
+        <td>World ranking points the team earned in the 2010-2011 season.</td>
+    </tr>
+    <tr>
+        <td>World2012, World 2013, ...</td>
+        <td>Same as above, for seasons through 2023-2024.</td>
+    </tr>
+    <tr><th colspan="2">Updates</th></tr>
+    <tr>
+        <td>date</td>
+        <td>Date when the update_database script was run.</td>
+    </tr>
+    </table> '''
     html += '<p>Because CurlingZone has become more popular over time, 94% of the matches in my webscraped database happened since the 2010-2011 season. In my analyses, I chose to focus mainly on data aggregated from the 2010-2011 season to the present. The rules and strategy in curling have undergone some minor changes since 2010, but the changes have generally not dramatically changed the balance of the game.</p>'
+    html += '<p>As a webscraped database, the data is naturally messy due to data entry errors, inconsistencies in formatting from year to year, etc. I chose to leave the raw webscraped data in the database and perform cleaning before each analysis run, rather than permanently altering the table to only include cleaned data. When running the analysis, I temporarily remove matches with the following errors:</p>'
+    html += '''<ul>
+   <li>No final score or line score is available (~2900 matches).</li>
+   <li>A final score is available, but no line score is available (~1700 matches).</li>
+   <li>Scores are only reported in one or two ends (~1400 matches). While it is possible for one team to concede early in a match, visual inspection suggests that the majority of these matches had the end scores entered as placeholders, not as the actual scores of the first one or two ends.</li>
+   <li>The final score is a tie (~150 matches). In most events, the match continues until a tie is broken, so these are most likely data entry errors.</li>
+   <li>Scores of > 8 in a single end (1 match). This is impossible in curling because a team scores one point per rock, and each team only has 8 rocks.</li>
+   <li>One team’s final score does not match the sum of their scores for all ends (~760 matches).</li>
+   <li>The final score is a tie (~150 matches). In most events, the match continues until a tie is broken, so these are most likely data entry errors.</li>
+    </ul>'''
+    html += '<p>This removes ~6200 matches from the databases, out of >178,000. That means the rate of incomplete or obviously incorrect data is ~3.5%, with the majority of the matches that are removed being because of incomplete data.</p>'
+    html += '<p>Much of the analysis below categorizes the matches by mens/womens, match length, and team rankings. Since none of those features are stored permanently in matches, they need to be computed by joining with other tables. For example, finding matches between two top-25 womens teams requires one join with the events table to find the season for each match, one join with teams to find the gender and season rank of Team 1, and a second join with teams to find the gender and season rank of Team 2. This is possible to do, but in practice collecting the results over 14 seasons for ~30 combinations of gender, match length, and rank is slow to run.</p>'
+    html += '<p>To speed up the calculations, I chose to use joins to pre-compute the features needed to categorize the matches and temporarily add those features to the matches table. To minimize the permanent size of the database, I chose not to store those features permanently. The pre-computed features are:</p>'
+    html += '''<ul>
+   <li>Ham2, Ham3, ... Ham12. Identity of the tean that has hammer in each end (1 for Team 1, -1 for Team 2), similar to Ham1.</li>
+   <li>Ends. Scheduled length of the match, in ends. Since curling has a culture of teams conceding early if they have no chance of winning, just using the number of ends played will not give accurate results.</li>
+   <li>Season. Season when the match was played. 2011 means the 2010-2011 season, etc.</li>
+   <li>Category. Indicates whether the match was mens, womens, or other/unknown.</li>
+   <li>Rank1, Rank2. Ranks of Team 1 and Team 2 in their category during the season when the match occurred.</li>
+    </ul>'''
     # Closing tag
     html += '</details>'
     return html
@@ -121,14 +236,14 @@ def end_scores(c, season, combos, js=False):
    html += '</details>'
    return html
 
-def win_probability(c, season, combos, js=False):
+def win_probability(c, season, combos, js=False, win_probs=None):
     # Header 
     html = '<details><summary>Testing the Common Wisdom: Having hammer in even ends is a big advantage</summary>'
     # Main text 
     html += '<p>In high-level curling, most players and commentators think that having the advantage of hammer (last rock) in even ends is a big advantage late in the game. The team with hammer has more control over the outcome of the end and is much more likely to score. </p>'
     html += '<p>For example, a team that is down 2 points with hammer in end 8 of 10 could score 2 in end 8 (tieing the score), force their opponent to score 1 point in end 9 (going down by one), and then score 2 in end 10 to win by 1 point. In contrast, a team that is down by even 1 point without hammer in end 8 of 10 has a trickier route to winning the game: they need to either score 3 points when they have hammer or steal at least 1 point to have a chance of winning.</p>'
     html += '<p>The graph below shows the probability of Team 1 winning a curling match, and can be filtered by mens/womens, match length in ends, and ranks of the two teams. Positive margins mean that Team 1 is ahead, and negative margins means that Team 1 is behind.</p>'
-    html += graphs.win_probability(c, season, combos, js)
+    html += graphs.win_probability(c, season, combos, js, win_probs)
     html += '<p>This graph shows the following trends:</p>'
     html += '''<ul>
    <li>If the range of ranks is the same for Team 1 and Team 2, the left and right graphs essentially mirror each other (because both graphs use Team 1's points margin on the x axis), with their color scales reversed (because the color scale shows Team 1's chance of winning in both graphs).</li>
