@@ -4,7 +4,7 @@ This repository contains analytics for a database of match scores from the sport
 
 ## Quick Link to Analytics Results
 
-<a href=https://htmlpreview.github.io/?https://github.com/rlmgieseking/curling-analytics/blob/main/analytics.html">Click here</a> to view the results of my analyses.
+<a href="https://htmlpreview.github.io/?https://github.com/rlmgieseking/curling-analytics/blob/main/analytics.html">Click here</a> to view the results of my analyses.
 
 ## Database
 
